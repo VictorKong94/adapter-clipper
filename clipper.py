@@ -2,13 +2,19 @@ import gzip
 import os.path
 
 
-def clip_fastq(fq_in, fq_out, clip_length):
+def clip_fastq(fq_in, fq_out, clip_length, expected_length=None):
     with smart_open(fq_in, 'rb') as f_in, smart_open(fq_out, 'wb') as f_out:
         for i, line in enumerate(f_in):
             if i % 2 == 0:
                 f_out.write(line)
             else:
-                f_out.write(line[clip_length:])
+                if expected_length is not None:
+                    read_length_adjustment = expected_length - (len(line) - 1)
+                    adjusted_clip_length = clip_length - read_length_adjustment
+                else:
+                    adjusted_clip_length = clip_length
+
+                f_out.write(line[max(0, adjusted_clip_length):])
 
 
 def file_is_gzipped(fname):
