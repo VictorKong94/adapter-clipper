@@ -83,7 +83,7 @@ def smart_open(filepaths):
 
 if __name__ == '__main__':
     # Script can be run from command line using:
-    #   python <directory containing FASTQs> <clip length> <expected length>
+    #   python <directory_containing_FASTQs> <clip_length> <expected_length>
     args = sys.argv
     
     # Import clip length
