@@ -2,7 +2,9 @@ from __future__ import absolute_import, division, print_function
 import fnmatch
 import gzip
 import os.path
+import re
 import sys
+import time
 
 
 def clip_fastq(files, clip_length, expected_length=None):
@@ -20,7 +22,13 @@ def clip_fastq(files, clip_length, expected_length=None):
     expected_length : int
         Expected length of reads in nucleotides.
     """
-    for infile, outfile in files:
+    for infile, outfile, logfile in files:
+        logfile.write('---\n')
+        logfile.write('adapter-clipper: Started: ' + time.ctime() + '\n')
+        logfile.write('adapter-clipper: Command line arguments:\n')
+        logfile.write('python3 ' + ' '.join(args) + '\n')
+        logfile.write('adapter-clipper: Version and Environment information:\n')
+        logfile.write(sys.version + '\n')
         for i, line in enumerate(infile):
             if i % 2 == 0:
                 outfile.write(line)
@@ -30,6 +38,7 @@ def clip_fastq(files, clip_length, expected_length=None):
                     # than expected_length - clip_length
                     clip_length -= expected_length - (len(line) - 1)
                 outfile.write(line[max(0, clip_length):])
+        logfile.write('adapter-clipper: Finished: ' + time.ctime() + '\n')
 
 
 def find_fastq(top):
@@ -69,6 +78,9 @@ def smart_open(filepaths):
         first to be read from, the second to be written to.
     """
     for filepath in filepaths:
+        outpath = re.sub('grouped', 'clipped', filepath)
+        logpath = re.sub('grouped', 'qa/clipped', filepath)
+        logpath = re.sub('.fastq*', '.log', logpath)
         with gzip.open(filepath, 'rb') as file:
             try:
                 file.readline()
@@ -76,9 +88,10 @@ def smart_open(filepaths):
                 infile = open(filepath, 'rb')
             else:
                 infile = gzip.open(filepath, 'rb')
-            outfile = gzip.open(filepath.replace('grouped', 'clipped'), 'wb', 6)
-            yield infile, outfile
-            infile.close(), outfile.close()
+            outfile = gzip.open(outpath, 'wb', 6)
+            logfile = open(logfile, 'a')
+            yield infile, outfile, logfile
+            infile.close(), outfile.close(), logfile.close()
 
 
 if __name__ == '__main__':
